@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
-
+import numpy as np
 import math
 
 '''
@@ -27,7 +27,7 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -50,11 +50,13 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 #Get closest waypoint
+                rospy.logdebug('self.pose {}'.format(self.pose))
+                rospy.logdebug('self.base_waypoints.waypoints[0] {}'.format(self.base_waypoints.waypoints[0]))
                 closest_waypoint_idx = self.get_closest_waypint_idx()
                 self.publish_waypoints(closest_waypoint_idx)
             rate.sleep()
 
-    def get_closest_waypoint_id(self):
+    def get_closest_waypint_idx(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
@@ -89,8 +91,11 @@ class WaypointUpdater(object):
         # TODO: Implement
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
+            rospy.logdebug('waypoints len {}, 1st elem {}'.format(len(waypoints.waypoints), waypoints.waypoints[0]))
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            rospy.logdebug('wayporints_2d[0] {}'.format(self.waypoints_2d[0]))
             self.waypoint_tree = KDTree(self.waypoints_2d)
+            rospy.logdebug('waypoint_tree {}'.format(self.waypoint_tree))
         pass
 
     def traffic_cb(self, msg):
